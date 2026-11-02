@@ -1,0 +1,53 @@
+Environment:
+  - weather_type
+  - visibility
+  - road_friction
+  - road_type
+  - time_of_day
+  - speed_limit
+
+Traffic:
+  - headway_distance
+  - lead_speed
+  - lead_rel_speed  # lead relative speed
+  - lead_ttc  # Time-to-Collision with lead vehicle
+  - lead_thw  # Time Headway to lead vehicle, reflects time needed for ego to reach lead vehicle position
+  - rear_distance  # distance to rear vehicle
+  - rear_speed
+  - rear_rel_speed
+  - rear_ttc
+  - left_front_distance
+  - left_front_speed
+  - left_rear_distance
+  - left_rear_speed
+  - right_front_distance
+  - right_front_speed
+  - right_rear_distance
+  - right_rear_speed
+  - lane_density_left
+  - lane_density_right
+  - available_gap_left
+  - available_gap_right
+  - cutin_risk
+
+Ego:
+  - ego_x
+  - ego_y
+  - ego_vx
+  - ego_vy
+  - ego_speed
+  - ego_acceleration
+  - yaw_rate
+  - jerk
+  - lane_id
+  - lateral_offset
+
+Action:
+  - action_type
+
+Outcome:
+  - risk_score
+  - comfort_score
+  - energy_consumption
+  - success_flag
+  - violation_flag

@@ -1,0 +1,48 @@
+env_name: merge-v0
+
+rule_path: data/extracted_rules.json
+rule_config_path: config/rule_index_definitions.yaml
+rule_scorer:
+  model_path: result/checkpoints/Merge/rule_scorer.pt
+  vocab_path: config/vocab.json
+  state_dim: 24  # Adjust according to actual trained model dimension
+
+planner:
+  top_k: 8
+  horizon: 8        # New: lookahead steps (for Fi-MPC/PUCT rollout)
+  gamma: 0.98       # New: discount factor
+
+reward:             # New: one-step reward weights and thresholds (for Fi-MPC)
+  w_target_speed: 0.10
+  w_risk: 1.0
+  w_energy: 0.20
+  w_comfort: 0.10
+  speed_target: 25.0
+  hard_risk_th: 0.95
+  hard_penalty: 5.0
+  lane_step: 4.0    # Lateral approximation step size (for simple lane displacement approximation)
+
+use_neo4j: True
+
+neo4j:
+  uri: bolt://localhost:7687
+  user: neo4j
+  password: ${NEO4J_PASSWORD:-neo4j}  # Set via environment variable NEO4J_PASSWORD
+
+llm:
+  model: "gpt-4.1-nano"
+  max_rules: 1000
+
+acquirer:
+  miss_eta: 0.0        # optional score-based gate; set > 0 to combine with novelty
+  verify_horizon: 5    # H-step rollout for online verification (Eq. 3.6)
+  window_size: 50      # sliding window size D_t^W for threshold calibration
+  novelty_threshold: 0.98  # max cos-sim above this = scene is familiar (not a miss)
+
+metrics:
+  delta_ttc: 3.0
+  lambda_risk: 1.0
+  lane_width: 4.0
+
+prior:
+  use_action_head_prior: false

@@ -1,0 +1,25 @@
+# Python 3.10+. Versions are left open; pin them from the environment used for the
+# paper (pip freeze) if you need bit-exact reproduction.
+
+# Core
+numpy
+scipy
+scikit-learn
+networkx
+pyyaml
+python-dotenv
+matplotlib
+
+# Simulation
+gymnasium
+highway-env
+moviepy
+
+# Models
+torch
+transformers
+torch-geometric   # only needed for the optional GNN dynamics (src/world_model/dynamics/gnn.py)
+
+# Rule memory and LLM
+neo4j
+openai

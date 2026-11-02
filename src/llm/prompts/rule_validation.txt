@@ -1,0 +1,17 @@
+Given the following driving rule:
+
+{rule}
+
+Check whether this rule is **structurally valid** based on the supported templates below:
+1. IF <condition> THEN <outcome>
+2. IF <condition_1> AND <condition_2> THEN <outcome>
+3. IF <numeric condition> THEN <action>
+4. IF <condition> THEN {action_1: weight_1, action_2: weight_2}
+5. IF <event> THEN perform <action> within <time>  # Temporal constraint
+
+The rule must:
+- Contain a valid IF-THEN structure
+- Use recognized variables
+- Respect numeric or logic format
+
+Respond only with "VALID" or "INVALID". If INVALID, briefly explain why.

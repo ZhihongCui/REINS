@@ -1,0 +1,65 @@
+rule_extraction_physical: |
+  Given the following driving state:
+  {state}
+  Extract physical rules that follow the format:
+  IF <condition> THEN <outcome>
+  Focus on physical dynamics such as speed, acceleration, brake force, jerk, etc.
+
+rule_extraction_behavioral: |
+  From the structured input below:
+  {state}
+  Extract behavioral driving rules that reflect normative or expert actions, such as yielding, maintaining headway, slowing down, etc.
+  Use formats like IF-THEN, THRESHOLD, or PRIORITY.
+
+rule_extraction_scene: |
+  Analyze the scene described below:
+  {state}
+  Extract context-aware scene rules using templates like:
+  - IF A AND B THEN C
+  - MULTI_ACTION
+  - WEIGHTED_ACTION
+  - TEMPORAL_CHAIN
+
+rule_scorer_prompt: |
+  Evaluate the following rule:
+  {rule}
+  Given current vehicle state and traffic conditions:
+  {state}
+  Provide a score between 0 and 1 reflecting the rule’s applicability, priority, and reliability.
+
+causal_graph_construction: |
+  From the sampled driving variables:
+  {variable_data}
+  Construct a causal graph. Identify causal links using logical reasoning or known physical principles.
+
+structure_function_learning: |
+  Learn the causal function f: X → Y from the following examples:
+  {examples}
+  Model it using symbolic equations or regressors that can generalize to new states.
+
+planner_prompt: |
+  Given:
+  - Current state: {state}
+  - Applicable rules: {rules}
+  - Causal outcomes: {causal_effects}
+  Select the optimal next action that satisfies rules, minimizes risk, and improves comfort.
+
+rule_matching_query: |
+  Match the following current driving state:
+  {state}
+  Against the stored rule index:
+  {rule_index}
+  Return all matching rules and trigger conditions.
+
+scene_description: |
+  Describe the scene using structured labels:
+  - Environment: {env_vars}
+  - Traffic: {traffic_vars}
+  - Ego Vehicle: {ego_vars}
+  Your description should be natural language + symbolic summary.
+
+neo4j_update_rule: |
+  Insert the following rule into the Neo4j knowledge graph:
+  {rule}
+  Tag it with type: {rule_type}, source: {source}, and related variables.
+

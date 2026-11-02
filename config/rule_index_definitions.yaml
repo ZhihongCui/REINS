@@ -1,0 +1,170 @@
+# =========================
+# Rule Index Definitions (3 big categories kept)
+# =========================
+
+# —— Rule type dictionary (optional, for documentation/debugging) ——
+types:
+  IF_THEN:           {desc: "IF <cond> THEN <action or target change>."}
+  AND_THEN:          {desc: "IF cond1 AND cond2 THEN <action>."}
+  THRESHOLD:         {desc: "IF <var op value> THEN <action>."}
+  PRIORITY:          {desc: "Priority among actions under a condition."}
+  MULTI_ACTION:      {desc: "Then do multiple actions (concurrent/sequential)."}
+  WEIGHTED_ACTION:   {desc: "Weighted actions (e.g., {SLOWER:0.7, LANE_LEFT:0.3})."}
+  TEMPORAL_CHAIN:    {desc: "IF <cond> WITHIN <t> THEN <response>."}
+
+# —— Canonical action synonym mapping (for normalization, readable by Python) ——
+action_canonical:
+  LANE_LEFT:   ["lane_left", "lane change left", "go left", "turn left", "merge left", "steer left"]
+  LANE_RIGHT:  ["lane_right","lane change right","go right","turn right","merge right","steer right"]
+  IDLE:        ["keep lane", "maintain", "stay", "idle", "hold", "keep"]
+  FASTER:      ["accelerate", "speed up", "increase speed", "faster", "light_accel"]
+  SLOWER:      ["brake", "decelerate", "reduce speed", "slow down", "slower"]
+
+# —— Fallback mapping from text effect to canonical action ——
+effect_to_action_map:
+  slow_down: SLOWER
+  reduce_speed: SLOWER
+  decelerate: SLOWER
+  brake: SLOWER
+  accelerate: FASTER
+  speed_up: FASTER
+  increase_speed: FASTER
+  keep_lane: IDLE
+  maintain: IDLE
+  avoid_lane_change_left: IDLE
+  avoid_lane_change_right: IDLE
+  steer: IDLE
+  smooth_steer: IDLE
+  light_accel: FASTER
+  increase_following_gap: SLOWER
+  brake_within_1.5s: SLOWER
+
+# —— Hints for lateral and longitudinal action inference (optional: for planner tie-break) ——
+action_inference:
+  lateral:
+    left:
+      signals: ["available_gap_left", "left_front_distance", "left_rear_distance", "lane_density_left"]
+      prefer_if_gap_bigger_than: 20.0
+      prefer_if_density_lower_than_other_side: true
+      action: "LANE_LEFT"
+    right:
+      signals: ["available_gap_right", "right_front_distance", "right_rear_distance", "lane_density_right"]
+      prefer_if_gap_bigger_than: 20.0
+      prefer_if_density_lower_than_other_side: true
+      action: "LANE_RIGHT"
+  longitudinal:
+    slower_signals: ["headway_distance", "lead_ttc", "lead_thw", "risk_score"]
+    faster_support: ["lead_rel_speed", "comfort_score"]  # rel<0 & comfortable -> can accelerate
+  tie_break:
+    both_sides_present_use_bigger_gap: true
+    both_longitudinal_present_prefer: "SLOWER"
+
+
+# —— Hard constraints for planning (can apply hard penalty in PUCT/MPC reward) ——
+safety_conflicts:
+  forbid_when:
+    - {action: "FASTER", condition: {var: "lead_ttc", op: "<", value: 1.0}}
+    - {action: "SLOWER", condition: {var: "rear_ttc", op: "<", value: 1.0}}
+  hard_penalty: 5.0
+
+# =====================================================
+# Rule library (three categories; ensure effect maps to canonical action or explicit target variable)
+# =====================================================
+
+Physical:
+  - index: THRESHOLD
+    trigger: ["lead_speed > 33.3"]  # approx 120km/h
+    effect: "risk_score ↑"
+    description: "Lead vehicle very fast increases risk."
+
+  - index: IF_THEN
+    trigger: ["abs(ego_acceleration) > 3.0"]
+    effect: "comfort_score ↓"
+    description: "Large acceleration magnitude reduces comfort."
+
+  - index: THRESHOLD
+    trigger: ["road_friction < 0.4"]
+    effect: "risk_score ↑"
+    description: "Low friction implies slip risk increment."
+
+  - index: IF_THEN
+    trigger: ["abs(yaw_rate) > 0.3 AND ego_speed > 20.0"]
+    effect: "instability_risk ↑"
+    description: "Sharp yaw at high speed raises instability risk."
+
+  - index: AND_THEN
+    trigger: ["energy_consumption > 0.12", "ego_speed > 20.0"]
+    effect: "SLOWER"
+    description: "High energy usage at high speed -> decelerate."
+
+Behavioral:
+  # —— Longitudinal: forward risk -> SLOWER
+  - index: THRESHOLD
+    trigger: ["headway_distance < 10.0"]
+    effect: "SLOWER"
+    description: "Short gap to lead -> decelerate."
+
+  - index: THRESHOLD
+    trigger: ["lead_ttc < 1.5"]
+    effect: "SLOWER"
+    description: "Small TTC -> decelerate."
+
+  - index: IF_THEN
+    trigger: ["risk_score > 0.7 AND lead_rel_speed > 0.0"]
+    effect: "SLOWER"
+    description: "High risk and closing in -> decelerate."
+
+  # —— Longitudinal: safe and comfortable -> FASTER
+  - index: AND_THEN
+    trigger: ["headway_distance > 40.0", "lead_rel_speed < 0.0", "comfort_score > 0.6"]
+    effect: "FASTER"
+    description: "Large gap, lead pulling away, comfortable -> accelerate."
+
+  # —— Lateral: change lane if left/right is feasible
+  - index: AND_THEN
+    trigger: ["available_gap_left > 20.0", "lane_density_left < lane_density_right"]
+    effect: "LANE_LEFT"
+    description: "Better left lane (gap/density) -> change left."
+
+  - index: AND_THEN
+    trigger: ["available_gap_right > 20.0", "lane_density_right < lane_density_left"]
+    effect: "LANE_RIGHT"
+    description: "Better right lane (gap/density) -> change right."
+
+  # —— Conservative lane keeping (both sides poor/no clear advantage)
+  - index: IF_THEN
+    trigger: ["available_gap_left < 10.0 AND available_gap_right < 10.0"]
+    effect: "IDLE"
+    description: "No safe lateral gap -> keep lane."
+
+  # —— Behavioral priority (example)
+  - index: PRIORITY
+    trigger: ["lead_ttc < 2.0"]
+    effect: "SLOWER > IDLE > FASTER"
+    description: "Safety-first priority when TTC is small."
+
+Scene:
+  - index: AND_THEN
+    trigger: ["time_of_day == 'night'", "visibility < 100.0"]
+    effect: "SLOWER"
+    description: "Low visibility at night -> slow down."
+
+  - index: MULTI_ACTION
+    trigger: ["cutin_risk > 0.7"]
+    effect: ["SLOWER", "LANE_LEFT"]   # or planner decides left/right by gaps
+    description: "High cut-in risk -> brake and prepare lateral escape."
+
+  - index: WEIGHTED_ACTION
+    trigger: ["risk_score > 0.6", "comfort_score < 0.5"]
+    effect: {SLOWER: 0.7, IDLE: 0.3}
+    description: "When comfort low but risk high, decel dominates."
+
+  - index: TEMPORAL_CHAIN
+    trigger: ["lead_ttc < 1.2"]
+    effect: "brake_within_1.5s"
+    description: "Emergency braking within 1.5s if TTC is extremely small."
+
+  - index: AND_THEN
+    trigger: ["lane_density_left > 0.6", "lane_density_right > 0.6"]
+    effect: "IDLE"
+    description: "Both sides dense -> keep lane."

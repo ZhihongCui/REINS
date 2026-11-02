@@ -1,0 +1,15 @@
+You are given a set of driving-related variables from an autonomous vehicle simulation environment:
+
+{variable_list}
+
+Your task is to identify **plausible causal relationships** between these variables. Output pairs in the format:
+CAUSE → EFFECT
+
+Each relationship should reflect potential physical, behavioral, or contextual causality relevant to driving.
+
+Examples:
+- ego_speed → energy_consumption
+- road_friction → risk_score
+- headway_distance → cutin_risk
+
+Return a list of CAUSE → EFFECT pairs. Do not explain, just list the relationships.

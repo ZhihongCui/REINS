@@ -1,0 +1,32 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment and secrets
+.env
+*.pem
+*.key
+credentials.json
+
+# Result directory (all generated outputs - can be regenerated)
+result/
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude and old source
+.claude/
+old_src/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep data/ tracked (input data)
+# data/ contains: samples/, extracted_rules.json

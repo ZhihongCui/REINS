@@ -1,0 +1,40 @@
+You are given a causal or normative driving relation extracted from a driving environment:
+
+CAUSE: {cause}
+EFFECT: {effect}
+
+Generate 1–3 structured driving rules for autonomous trajectory planning.
+
+Prefer numeric rules when variables are numeric and meaningful thresholds exist.
+
+Available formats:
+- IF <condition> THEN <action>                                          # IF_THEN
+- IF <condition_1> AND <condition_2> THEN <action>                      # AND_THEN
+- IF <numeric_variable> OP <threshold> THEN <action>                    # THRESHOLD (RECOMMENDED)
+- IF <condition> PRIORITIZE <action_1> OVER <action_2>                  # PRIORITY
+- IF <condition> THEN <action_1> AND <action_2>                         # MULTI_ACTION
+- IF <condition> THEN {<action_1>: <weight_1>, <action_2>: <weight_2>}  # WEIGHTED_ACTION
+- IF <event> THEN <response> WITHIN <time_window> seconds               # TEMPORAL_CHAIN
+
+Numeric requirement:
+- Propose data-grounded thresholds using one of:
+  - absolute values with units (e.g., headway_distance < 15 m)
+  - standardized forms (e.g., ego_speed > mu + 1.0 * sigma)
+  - quantile forms (e.g., time_to_collision < p20)
+- Keep rules concise and executable.
+
+Return 1 JSON object per line with fields:
+{
+  "rule_text": "...",                 
+  "rule_index": "THRESHOLD|IF_THEN|AND_THEN|PRIORITY|MULTI_ACTION|WEIGHTED_ACTION|TEMPORAL_CHAIN",
+  "variables": ["headway_distance","ego_speed", ...],
+  "params": {                         
+    "thresholds": {
+      "headway_distance": {"form":"abs","value":15.0,"unit":"m","op":"<"},
+      "ego_speed": {"form":"z","k":1.0,"op":">"},             
+      "time_to_collision": {"form":"q","q":0.2,"op":"<"}      
+    },
+    "weights": {"FASTER":0.6,"IDLE":0.4}
+  },
+  "action": "SLOWER"
+}
